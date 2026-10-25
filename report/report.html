@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>CSCI 5609 A2 — Interactive Analysis Report</title>
+<style>
+  @page { size: Letter; margin: 0.6in 0.65in; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #1f1e1c; margin: 0; }
+  h1 { font-size: 22pt; margin: 0 0 2px; }
+  h2 { font-size: 15pt; margin: 22px 0 6px; padding-top: 8px; border-top: 1.5px solid #1f1e1c; }
+  h3 { font-size: 11.5pt; margin: 14px 0 4px; }
+  p { margin: 0 0 7px; }
+  .deck { color: #52514e; margin-bottom: 10px; }
+  .links { background: #f4f3ef; border-radius: 6px; padding: 8px 12px; margin: 10px 0 4px; }
+  .links div { margin: 2px 0; }
+  .links b { display: inline-block; width: 120px; }
+  a { color: #1c5cab; }
+  figure { margin: 8px 0 10px; break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid #e3e1db; border-radius: 4px; display: block; }
+  figcaption { font-size: 8.8pt; color: #52514e; margin-top: 3px; }
+  .two { display: flex; gap: 12px; break-inside: avoid; }
+  .two figure { flex: 1; min-width: 0; }
+  .narrow img { width: 62%; margin: 0 auto; }
+  .w85 img { width: 85%; margin: 0 auto; }
+  .w92 img { width: 92%; margin: 0 auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 9.5pt; margin: 6px 0 10px; break-inside: avoid; }
+  th, td { border-bottom: 1px solid #e3e1db; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: #f4f3ef; }
+  .tag { display: inline-block; font-size: 8pt; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #1c5cab; }
+  .conclusion { border-left: 3px solid #2a78d6; padding: 4px 10px; background: #f6f9fd; margin: 6px 0 10px; }
+  .page-break { break-before: page; }
+  ul { margin: 2px 0 8px; padding-left: 18px; }
+  li { margin-bottom: 3px; }
+  .muted { color: #6b6a64; }
+</style>
+</head>
+<body>
+
+<h1>A2: Interactive Analysis — Summer Movies</h1>
+<p class="deck">CSCI 5609 Visualization · Fall 2026 · SvelteKit + TypeScript + D3 · Dataset: <code>summer_movies.csv</code> (899 IMDb titles with “summer” in the title)</p>
+
+<div class="links">
+  <div><b>Live demo</b><a href="https://jason-2333.github.io/A2/A2/">https://jason-2333.github.io/A2/A2/</a></div>
+  <div><b>GitHub repository</b><a href="https://github.com/jason-2333/A2">https://github.com/jason-2333/A2</a></div>
+</div>
+<p class="muted">The A2 page contains the required dashboard (Part 1) and the self-designed multi-view visualization (Part 4). The repository keeps the A0 and A1 routes from earlier assignments.</p>
+
+<h2>1. Multi-view dashboard</h2>
+<p>All four template tasks are implemented:</p>
+<ul>
+  <li><b>tip1 — click interaction:</b> clicking a circle selects it; clicking it again (or “Clear selection”) clears it. The panel on the right lists every attribute of the selected movie. The selected circle is filled and drawn at opacity 1.</li>
+  <li><b>tip2 — line:</b> a <code>d3.line()</code> generator with <code>curveBasis</code> draws movies per year. Small dots show the raw yearly counts.</li>
+  <li><b>tip3 — brush:</b> <code>d3.brushX</code> on the line chart inverts the pixel selection with <code>xScale.invert</code>, snaps it to whole years and writes <code>yearRange</code>. The scatter plot shows only movies in that range. Clearing the brush restores all movies.</li>
+  <li><b>tip4 — dropdowns:</b> three <code>&lt;select bind:value&gt;</code> controls bind any attribute to the x, y and size channels. The points animate to their new positions.</li>
+</ul>
+<p>Small additions: titles with an unknown year or runtime (stored as <code>null</code>) are skipped only when that attribute is encoded. Large circles are drawn first so that small circles on top stay clickable. A “log X” checkbox (used in Factor 2) applies a log scale to a numeric x attribute.</p>
+<figure class="w85">
+  <img src="../screenshots/p1-brush.png" />
+  <figcaption>Figure 1. The dashboard after brushing 2000–2010 on the line chart (207 movies shown) and clicking <i>500 Days of Summer</i> (largest circle). Its details appear on the right.</figcaption>
+</figure>
+
+<h2>2. Reflection on the dashboard design</h2>
+<h3>Why opacity = 0.5? What if all points were opacity 1?</h3>
+<p>The scatter plot has heavy <b>overplotting</b>. Hundreds of movies share a release year, and ratings are rounded to one decimal, so many circles land on or near each other. At 0.5 opacity, overlapping outlines add up: a spot where ten movies overlap looks darker than a spot with one movie, so the chart shows <b>density</b> as well as position. Circles hidden behind others, especially the large ones encoding high vote counts, stay visible through the circles in front. The lower default opacity also leaves room for the <b>selection highlight</b>: the clicked movie is filled and drawn at opacity 1, so it stands out.</p>
+<p>At opacity 1 (Figure 2, right), every outline is drawn at full strength. A single movie and a stack of ten look the same, so the dense 2005–2024 band turns into a uniform mesh and you can no longer see where movies concentrate. Big circles cover the circles under them, and a selected point has much less contrast with the unselected ones.</p>
+<div class="two">
+  <figure><img src="../screenshots/r-opacity-05.png" /><figcaption>Figure 2a. Default opacity 0.5: overlaps get darker, so density is visible.</figcaption></figure>
+  <figure><img src="../screenshots/r-opacity-1.png" /><figcaption>Figure 2b. Opacity forced to 1: every overlap looks the same and density is lost.</figcaption></figure>
+</div>
+
+<h3>Which attributes should be removed from each dropdown?</h3>
+<p>Position and size are <b>magnitude channels</b>. They work for quantitative or ordered data and make little sense for identifiers or nominal fields with hundreds of values. The dataset's attributes are: <code>tconst</code> (ID), <code>title_type</code> (nominal, 3 values), <code>primary_title</code>, <code>original_title</code>, <code>simple_title</code> (nominal, about 776–899 distinct strings), <code>year</code> (temporal), <code>runtime_minutes</code>, <code>average_rating</code>, <code>num_votes</code> (quantitative) and <code>genres</code> (multi-valued nominal, 24 values).</p>
+<table>
+  <tr><th style="width:16%">Channel</th><th style="width:44%">Remove</th><th>Keep</th></tr>
+  <tr><td>X axis</td><td><code>tconst</code>, <code>primary_title</code>, <code>original_title</code>, <code>simple_title</code></td><td>year, runtime_minutes, average_rating, num_votes, title_type, genres (genres is fine on x as a few dozen categories)</td></tr>
+  <tr><td>Y axis</td><td><code>tconst</code>, <code>primary_title</code>, <code>original_title</code>, <code>simple_title</code> (<code>genres</code> is already excluded)</td><td>average_rating, num_votes, runtime_minutes, year, title_type</td></tr>
+  <tr><td>Size</td><td><code>tconst</code>, <code>primary_title</code>, <code>original_title</code>, <code>simple_title</code>, <code>title_type</code>, <code>year</code></td><td>num_votes, average_rating, runtime_minutes</td></tr>
+</table>
+<p>The ID and three title fields have no order and almost one value per movie. On an axis they create ~800 unreadable bands (Figure 3). Because only 776 of 899 primary titles are unique, movies that share a title such as “Indian Summer” also collapse into one band. Size implies “more vs. less”, so it should only encode quantities. <code>title_type</code> is nominal, and with a band scale its size would depend on the alphabetical order of the categories. <code>year</code> is ordered, but area is a poor channel for a date, and “bigger = later” is not a meaningful reading. Year belongs on position.</p>
+<figure class="narrow"><img src="../screenshots/r-bad-encoding.png" /><figcaption>Figure 3. X = primary_title: about 800 overlapping labels and no readable structure.</figcaption></figure>
+
+<h2 class="page-break">3. Guided EDA: which factors influence the ratings of summer movies?</h2>
+<p>Before exploring, I proposed three factors from intuition:</p>
+<ol>
+  <li><b>Genre</b>: horror and thriller titles are often low-budget and polarizing, while documentaries have a self-selected, appreciative audience.</li>
+  <li><b>Popularity (number of votes)</b>: widely seen movies might be better (that is how they got popular), or ratings of obscure titles might be extreme.</li>
+  <li><b>Release era</b>: older films that are still on IMDb may be the “classics”, while recent years include many cheap productions.</li>
+</ol>
+
+<h3>Factor 1 — Genre <span class="tag">clear influence</span></h3>
+<p><i>Setup:</i> X = <code>genres</code>, Y = <code>average_rating</code>, Size = <code>num_votes</code>. A movie with several genres appears in each of its genre columns.</p>
+<figure class="w85"><img src="../screenshots/f1-genre.png" /><figcaption>Figure 4. Rating by genre. The Horror column sits low and the Documentary column sits high.</figcaption></figure>
+<p>Genre columns sit at very different heights. <b>Horror</b> is the lowest: its circles crowd between 2.3 and 6. Mean rating is 4.81 (median 4.95), and half of the 48 horror titles are rated below 5. <b>Thriller</b> is also low (mean 5.32; 39% below 5). <b>Documentary</b> is the opposite: a tight column between 6 and 9.8 with mean 7.31 (median 7.5). 27% of documentaries are rated 8 or higher and only 2% are below 5. The big genres, Drama (6.29), Comedy (6.15) and Romance (6.15), sit in the middle with wide spread. Music, History, Biography and War also lean high (6.7–6.9).</p>
+<div class="conclusion"><b>Conclusion:</b> genre is strongly associated with rating. The gap between Documentary and Horror averages is about 2.5 points on a 10-point scale, the largest effect of any factor I checked. This is an association, not proof of causation (audiences self-select into genres), but genre is the best single predictor here.</div>
+<p class="muted">Extra observation (X = <code>title_type</code>): TV movies average 6.63 and direct-to-video titles 6.38, compared with 6.20 for theatrical movies. This is partly because many documentaries are TV or video releases.</p>
+
+<h3>Factor 2 — Popularity (num_votes) <span class="tag">weak, non-linear</span></h3>
+<p><i>Setup:</i> X = <code>num_votes</code>, Y = <code>average_rating</code>, Size = <code>num_votes</code>. On a linear axis, <i>500 Days of Summer</i> (564,894 votes) squeezes everything else into one column (Figure 5a), so I switched on the log X option (Figure 5b).</p>
+<div class="two">
+  <figure><img src="../screenshots/f2-votes-linear.png" /><figcaption>Figure 5a. Linear x: one outlier hides the pattern.</figcaption></figure>
+  <figure><img src="../screenshots/f2-votes-log.png" /><figcaption>Figure 5b. Log x: a funnel. Ratings narrow as votes grow.</figcaption></figure>
+</div>
+<p>The log view shows a <b>funnel</b>, not a trend line. Titles with fewer than 100 votes (408 titles) cover almost the whole scale (2.3 to 9.8). Their mean is fairly high (6.54) because tiny audiences are often fans: 14% of them are rated 8 or higher. Titles with 100–999 votes have the lowest average (5.85), with 20% below 5. Above 1,000 votes (144 titles), ratings settle between about 5 and 8 (mean 6.53, SD 0.96 instead of 1.24). The most-voted titles average 6.7–6.8. Over all titles the rank correlation between votes and rating is only −0.13. Among titles with at least 1,000 votes it is +0.21.</p>
+<div class="conclusion"><b>Conclusion:</b> popularity does not determine rating in a simple way. It mostly affects how reliable a rating is: every extreme score (below 3 or above 9) comes from a small audience, and widely seen summer movies settle around 6.5. Among well-known titles there is a slight positive tendency.</div>
+
+<h3>Factor 3 — Release era <span class="tag">small effect</span></h3>
+<p><i>Setup:</i> X = <code>year</code>, Y = <code>average_rating</code>, Size = <code>num_votes</code>. I brushed the line chart to compare 1946–1970 with 2010–2024.</p>
+<div class="two">
+  <figure><img src="../screenshots/f3-early.png" /><figcaption>Figure 6a. Brush 1946–1970: 84 movies, almost none below 5.</figcaption></figure>
+  <figure><img src="../screenshots/f3-recent.png" /><figcaption>Figure 6b. Brush 2010–2024: 406 movies with a long low tail.</figcaption></figure>
+</div>
+<p>Brushing makes the comparison easy. The 84 movies from 1946–1970 have a mean rating of 6.62 (median 6.75), and only 4% are below 5. The 406 movies from 2010–2024 average 6.25 (median 6.3), with 12% below 5 and a wider spread (SD 1.25 vs 0.94). The top of the distribution is similar in both periods (7% and 9% rated 8+). The difference comes from the low tail that appears in recent decades. The line chart also shows that output grew roughly tenfold after 2005. Recent periods include many more low-budget titles; for example, horror is 6.7% of 2010–2024 titles but 1.2% before 1971. Older films that are still listed and rated today are likely a survivor-biased set of better-remembered films.</p>
+<div class="conclusion"><b>Conclusion:</b> era has a small, indirect effect: older summer movies rate about 0.4 points higher, but over all years the correlation between year and rating is close to zero (r = −0.04). The difference is better explained by the changing genre mix and survivorship than by movies getting worse.</div>
+<p><b>Summary of Part 3:</b> genre clearly influences ratings; popularity mostly affects how stable a rating is; and era matters only slightly, through which films are made and remembered.</p>
+
+<h2 class="page-break">4. Self-led EDA: what earns a summer movie an audience?</h2>
+<p><b>Question.</b> Part 3 asked what makes a movie <i>rated</i> well. Here I ask what makes it <i>watched</i>: <b>what determines how much audience attention (number of IMDb votes) a summer movie receives — its format (theatrical / TV / direct-to-video), its genre, or its release era?</b> Votes are extremely skewed: the median title has 120 votes, while the top 10 titles hold 60% of all 2.07 million votes. A multi-view design fits this question because it has three candidate factors that interact. For example, “Romance is popular” might only be true for theatrical romances from the 2000s. Cross-filtering lets me hold one factor fixed while looking at the others.</p>
+
+<h3>Design (new visualization, different from Part 1)</h3>
+<table>
+  <tr><th style="width:22%">View</th><th>Encoding</th><th style="width:34%">Interaction</th></tr>
+  <tr><td>A. Votes by genre</td><td>Horizontal bar chart (genres with ≥10 titles); bar length = median or total votes; sorted; n shown on every bar</td><td>Click a bar to select a genre; this filters view C and highlights view B</td></tr>
+  <tr><td>B. Every title, split by format</td><td>Jittered strip plot on a <b>log</b> vote axis, one row per format, colored by format (validated colorblind-safe palette); black tick = median of the highlighted titles</td><td>Hover a dot for title, year, votes and rating. Titles outside the genre/decade selection fade to gray</td></tr>
+  <tr><td>C. Votes by decade</td><td>Vertical bar chart of median or total votes per decade, n under each bar</td><td>Click a bar to select a decade; this filters view A and highlights view B</td></tr>
+  <tr><td>Shared controls</td><td>Format legend chips, Median/Total toggle, summary numbers (titles, median votes, share of all votes, share held by the top 10), top-10 list</td><td>Toggling a format re-computes all views; Reset clears everything</td></tr>
+</table>
+<p>Compared with Part 1, this design uses different chart types (bar charts and a log-scale strip plot instead of a scatter and a line), a different measure (votes as the outcome), and different interactions: two-way click cross-filtering, legend toggles, a metric switch and hover tooltips, instead of a one-way brush.</p>
+<figure><img src="../screenshots/p4-default.png" /><figcaption>Figure 7. The audience-attention explorer with no filters.</figcaption></figure>
+
+<h3>Factor A — Format <span class="tag">strongest driver</span></h3>
+<p>View B shows the format effect directly: the whole theatrical row sits to the right of the TV row, which sits to the right of the video row. Median votes are <b>155</b> (theatrical, 705 titles), <b>85</b> (TV movie, 136) and <b>24</b> (direct-to-video, 58). Theatrical titles account for 97% of all votes. After toggling “Theatrical movie” off (Figure 8), the remaining 194 TV and video titles hold only <b>3.0%</b> of all votes, with a median of 58. Toggling formats one at a time shows that the effect also holds inside the large genres: theatrical vs. TV medians are 490 vs 349 for Romance, 217 vs 124 for Drama and 305 vs 181 for Comedy. A few small TV groups are exceptions, such as the 16 TV family movies.</p>
+<figure class="w92"><img src="../screenshots/p4-no-theatrical.png" /><figcaption>Figure 8. Theatrical movies toggled off: TV and video titles hold 3% of the attention.</figcaption></figure>
+
+<h3>Factor B — Genre <span class="tag">large effect; attention ≠ quality</span></h3>
+<p>View A shows a roughly 20× range in typical attention: Romance has a median of 462 votes, Thriller 337, Adventure 332 and Mystery 308, while Documentary has 42 and Short 24. Selecting genres and comparing with Part 3 gives a clear contrast. <b>Horror</b> (Figure 9a) is the <i>lowest-rated</i> genre but gets a <b>higher-than-typical</b> median (238 votes) and <b>16%</b> of all votes. However, 97% of horror votes go to its top 10 titles, led by the <i>I Know What You Did Last Summer</i> franchise (view B highlights them at the far right). <b>Documentary</b> (Figure 9b) is the <i>best-rated</i> genre but has a median of only 42 votes and 1.7% of all votes. Many documentaries are TV or video releases, but even theatrical documentaries have a median of only 50 votes, compared with 490 for theatrical romances.</p>
+<figure class="w92"><img src="../screenshots/p4-horror.png" /><figcaption>Figure 9a. Horror selected: low ratings, high attention, concentrated in one franchise.</figcaption></figure>
+<figure class="w92"><img src="../screenshots/p4-documentary.png" /><figcaption>Figure 9b. Documentary selected: top ratings, very little attention.</figcaption></figure>
+
+<h3>Factor C — Release era <span class="tag">totals mislead; medians are flat</span></h3>
+<p>With the <b>Total votes</b> metric (Figure 10a), the 2000s look like the golden age, with 900k votes (43% of all). Switching to medians shows that a typical title from the 2000s gets only 103 votes, about the same as the 1990s (108), 2010s (115) and 2020s (115). The 2000s total is driven by a few hits: <i>500 Days of Summer</i> alone accounts for 565k of the 900k votes. Only the 1940s and 1950s have higher medians (431 and 411). With so few titles (5 and 30), these are most likely the well-remembered classics that survived, as seen in Part 3. Combining filters shows the interaction: <b>Romance × 2000s</b> (Figure 10b) has 31 titles with a median of 809 votes and <b>38%</b> of all votes in the dataset. 99% of those votes go to its top 10, and 29 of the 31 titles are theatrical releases.</p>
+<figure class="w92"><img src="../screenshots/p4-total.png" /><figcaption>Figure 10a. Total votes: the 2000s bar is inflated by a single hit.</figcaption></figure>
+<figure class="w92"><img src="../screenshots/p4-romance-2000s.png" /><figcaption>Figure 10b. Romance + 2000s cross-filter: 31 titles hold 38% of all votes.</figcaption></figure>
+
+<div class="conclusion"><b>Answer.</b> Attention to summer movies is hit-driven: 10 of 899 titles collect 60% of the votes. For a <i>typical</i> title, <b>format</b> is the most consistent driver: a theatrical release shifts the whole distribution about 2–6× higher than TV or video. <b>Genre</b> comes second, with romance, thriller, adventure and mystery drawing far more attention than documentaries and shorts. Attention does not follow quality: the lowest-rated genre (horror) gets much more attention than the highest-rated one (documentary). <b>Release era</b> barely changes the typical title (medians of about 100–190 votes since the 1960s). Its large differences in total votes come from a few blockbusters, which the Total/Median toggle and the top-10 list make visible.</div>
+
+</body>
+</html>
